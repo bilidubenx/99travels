@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Star, ArrowRight, ArrowLeft, MapPin } from 'lucide-react'
+import { motion } from 'motion/react'
 import Navbar from '../components/Navbar.jsx'
 import Footer from '../components/Footer.jsx'
+import { ScrollProgress, CursorGlow, Tilt, Magnetic, CountUp } from '../components/motionFx.jsx'
 import { allDestinations } from '../data/index.js'
 
 const FILTERS = [
@@ -14,24 +16,36 @@ const FILTERS = [
   { key: 'nature',   label: 'Nature',    emoji: '🌿' },
 ]
 
+const HEADER_STATS = [
+  { to: 15, suffix: '', label: 'Destinations' },
+  { to: 50, suffix: 'k+', label: 'Voyageurs' },
+  { to: 4.8, suffix: '★', label: 'Note moyenne' },
+]
+
+const gridItem = {
+  hidden: { opacity: 0, y: 40, scale: 0.96 },
+  show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.5, ease: [0.21, 0.47, 0.32, 0.98] } },
+}
+
 function DestinationCard({ d }) {
   const [hovered, setHovered] = useState(false)
   return (
+    <motion.div variants={gridItem}>
     <Link to={`/destination/${d.slug}`} style={{ textDecoration: 'none', display: 'block' }}>
+    <Tilt max={9} scale={1.04} style={{ borderRadius: 24, cursor: 'pointer' }}>
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        borderRadius: 24, overflow: 'hidden', cursor: 'pointer', background: 'white',
-        boxShadow: hovered ? '0 20px 60px rgba(0,0,0,0.18)' : '0 4px 20px rgba(0,0,0,0.07)',
-        transform: hovered ? 'translateY(-8px)' : 'translateY(0)',
-        transition: 'all 0.35s ease',
+        borderRadius: 24, overflow: 'hidden', background: 'white',
+        boxShadow: hovered ? '0 26px 70px rgba(245,130,32,0.26)' : '0 4px 20px rgba(0,0,0,0.07)',
+        transition: 'box-shadow 0.35s ease',
       }}
     >
       <div style={{ position: 'relative', height: 220, overflow: 'hidden' }}>
-        <img src={d.img} alt={d.name} style={{ width: '100%', height: '100%', objectFit: 'cover', transform: hovered ? 'scale(1.08)' : 'scale(1)', transition: 'transform 0.5s ease' }} />
+        <img src={d.img} alt={d.name} style={{ width: '100%', height: '100%', objectFit: 'cover', transform: hovered ? 'scale(1.1)' : 'scale(1)', transition: 'transform 0.6s ease' }} />
         <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 60%)' }} />
-        <span style={{ position: 'absolute', top: 14, left: 14, background: '#F58220', color: 'white', padding: '5px 13px', borderRadius: 50, fontSize: 12, fontWeight: 700 }}>{d.tag}</span>
+        <span style={{ position: 'absolute', top: 14, left: 14, background: '#F58220', color: 'white', padding: '5px 13px', borderRadius: 50, fontSize: 12, fontWeight: 700, transform: 'translateZ(40px)' }}>{d.tag}</span>
         <div style={{ position: 'absolute', bottom: 14, left: 14, display: 'flex', alignItems: 'center', gap: 3 }}>
           {[...Array(5)].map((_, k) => <Star key={k} size={11} color="#F58220" fill={k < Math.floor(d.rating) ? '#F58220' : 'transparent'} />)}
           <span style={{ color: 'white', fontSize: 12, marginLeft: 4, fontWeight: 600 }}>{d.rating}</span>
@@ -53,12 +67,14 @@ function DestinationCard({ d }) {
           <h3 style={{ margin: '0 0 5px', fontWeight: 700, fontSize: 17, color: '#111' }}>{d.name}</h3>
           <p style={{ margin: 0, color: '#F58220', fontWeight: 600, fontSize: 14 }}>{d.price}</p>
         </div>
-        <div style={{ width: 42, height: 42, borderRadius: '50%', background: hovered ? 'linear-gradient(135deg, #F58220, #D96E10)' : '#fff3e8', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s', flexShrink: 0 }}>
+        <div style={{ width: 42, height: 42, borderRadius: '50%', background: hovered ? 'linear-gradient(135deg, #F58220, #D96E10)' : '#fff3e8', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s', flexShrink: 0, transform: 'translateZ(30px)' }}>
           <ArrowRight size={17} color={hovered ? 'white' : '#F58220'} />
         </div>
       </div>
     </div>
+    </Tilt>
     </Link>
+    </motion.div>
   )
 }
 
@@ -72,6 +88,8 @@ export default function Destinations() {
 
   return (
     <div style={{ fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif", minHeight: '100vh', background: '#fafafa' }}>
+      <ScrollProgress />
+      <CursorGlow />
       <Navbar />
 
       {/* Page header */}
@@ -86,7 +104,7 @@ export default function Destinations() {
           </Link>
 
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 24 }}>
-            <div>
+            <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, ease: [0.21, 0.47, 0.32, 0.98] }}>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(245,130,32,0.15)', border: '1px solid rgba(245,130,32,0.4)', borderRadius: 50, padding: '6px 16px', marginBottom: 20 }}>
                 <MapPin size={13} color="#F58220" />
                 <span style={{ color: '#F58220', fontSize: 13, fontWeight: 600 }}>{allDestinations.length} destinations disponibles</span>
@@ -97,15 +115,17 @@ export default function Destinations() {
               <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: 18, marginTop: 16, marginBottom: 0, maxWidth: 500 }}>
                 Des plages paradisiaques aux sommets enneigés, toutes nos destinations vous attendent.
               </p>
-            </div>
-            <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap' }}>
-              {[['15', 'Destinations'], ['50k+', 'Voyageurs'], ['4.8★', 'Note moyenne']].map(([n, l]) => (
-                <div key={l} style={{ textAlign: 'center' }}>
-                  <p style={{ margin: 0, fontWeight: 800, fontSize: 26, color: '#F58220' }}>{n}</p>
-                  <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 1 }}>{l}</p>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.2, ease: [0.21, 0.47, 0.32, 0.98] }} style={{ display: 'flex', gap: 28, flexWrap: 'wrap' }}>
+              {HEADER_STATS.map((s) => (
+                <div key={s.label} style={{ textAlign: 'center' }}>
+                  <p style={{ margin: 0, fontWeight: 800, fontSize: 26, color: '#F58220' }}>
+                    <CountUp to={s.to} suffix={s.suffix} />
+                  </p>
+                  <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: 1 }}>{s.label}</p>
                 </div>
               ))}
-            </div>
+            </motion.div>
           </div>
         </div>
       </div>
@@ -149,9 +169,14 @@ export default function Destinations() {
             <p style={{ fontSize: 20, fontWeight: 600, color: '#555', margin: 0 }}>Aucune destination trouvée</p>
           </div>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 28 }}>
+          <motion.div
+            key={activeFilter}
+            variants={{ hidden: {}, show: { transition: { staggerChildren: 0.05 } } }}
+            initial="hidden" animate="show"
+            style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 28 }}
+          >
             {filtered.map(d => <DestinationCard key={d.id} d={d} />)}
-          </div>
+          </motion.div>
         )}
 
         {/* CTA */}
@@ -165,12 +190,11 @@ export default function Destinations() {
             </p>
           </div>
           <Link to="/" state={{ scrollTo: 'contact' }} style={{ textDecoration: 'none' }}>
-            <button style={{ background: 'white', color: '#F58220', border: 'none', borderRadius: 50, padding: '16px 32px', fontWeight: 700, fontSize: 16, cursor: 'pointer', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', transition: 'transform 0.2s', fontFamily: 'inherit' }}
-              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.04)'}
-              onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-            >
+            <Magnetic strength={0.4}>
+            <motion.button whileTap={{ scale: 0.95 }} style={{ background: 'white', color: '#F58220', border: 'none', borderRadius: 50, padding: '16px 32px', fontWeight: 700, fontSize: 16, cursor: 'pointer', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', fontFamily: 'inherit' }}>
               Nous contacter →
-            </button>
+            </motion.button>
+            </Magnetic>
           </Link>
         </div>
       </div>

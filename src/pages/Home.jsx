@@ -7,9 +7,14 @@ import {
 } from 'lucide-react'
 import Navbar from '../components/Navbar.jsx'
 import Footer from '../components/Footer.jsx'
-import ScrollIndicator from '../components/ScrollIndicator.jsx'
 import useInView from '../hooks/useInView.js'
-import { allDestinations, features, offers, testimonials } from '../data/index.js'
+import { allDestinations, features, offers, testimonials, partners } from '../data/index.js'
+import {
+  motion, useScroll, useTransform, useSpring, useMotionValue,
+} from 'motion/react'
+import {
+  ScrollProgress, CursorGlow, Reveal, CountUp, Tilt, Magnetic, LogoMarquee,
+} from '../components/motionFx.jsx'
 
 /* ─── scroll-to on forward-navigation (not on POP — ScrollToTop handles that) ─── */
 function useScrollToSection() {
@@ -28,40 +33,122 @@ function useScrollToSection() {
   }, [location.key]) // location.key is unique per navigation
 }
 
-/* ── Hero ── */
+/* ── Hero (cinematic) ── */
+const TITLE_LINE1 = ['Votre', 'prochaine']
+const TITLE_LINE3 = ['ici']
+const HERO_STATS = [
+  { to: 10, suffix: ' ans', label: "d'expérience" },
+  { to: 50, suffix: 'k+', label: 'avis 5 étoiles' },
+  { to: 99, suffix: '%', label: 'clients satisfaits' },
+]
+
 function Hero() {
   const [dest, setDest] = useState('')
   const [date, setDate] = useState('')
 
+  // Parallax: scroll-based + mouse-based
+  const { scrollY } = useScroll()
+  const bgY = useTransform(scrollY, [0, 800], [0, 160])
+  const bgScale = useTransform(scrollY, [0, 800], [1, 1.18])
+  const contentY = useTransform(scrollY, [0, 600], [0, 90])
+  const contentOpacity = useTransform(scrollY, [0, 480], [1, 0])
+
+  const mx = useMotionValue(0)
+  const my = useMotionValue(0)
+  const smx = useSpring(mx, { stiffness: 60, damping: 18 })
+  const smy = useSpring(my, { stiffness: 60, damping: 18 })
+  const badgeAX = useTransform(smx, (v) => v * 28)
+  const badgeAY = useTransform(smy, (v) => v * 28)
+  const badgeBX = useTransform(smx, (v) => v * -22)
+  const badgeBY = useTransform(smy, (v) => v * 18)
+  const bgShiftX = useTransform(smx, (v) => v * -18)
+
+  function onPointerMove(e) {
+    const w = window.innerWidth, h = window.innerHeight
+    mx.set((e.clientX - w / 2) / w)
+    my.set((e.clientY - h / 2) / h)
+  }
+
+  const container = {
+    hidden: {},
+    show: { transition: { staggerChildren: 0.08, delayChildren: 0.15 } },
+  }
+  const word = {
+    hidden: { opacity: 0, y: 40, filter: 'blur(8px)' },
+    show: { opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.8, ease: [0.21, 0.47, 0.32, 0.98] } },
+  }
+
   return (
-    <section id="hero" style={{ position: 'relative', minHeight: '100vh', display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', inset: 0, backgroundImage: 'url(https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1800&q=85)', backgroundSize: 'cover', backgroundPosition: 'center' }} />
-      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(135deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.4) 60%, rgba(245,130,32,0.15) 100%)' }} />
+    <section
+      id="hero"
+      onPointerMove={onPointerMove}
+      style={{ position: 'relative', minHeight: '100vh', display: 'flex', alignItems: 'center', overflow: 'hidden', background: '#0b0b0d', paddingBottom: 48 }}
+    >
+      {/* Ken-burns background image with parallax */}
+      <motion.div
+        style={{
+          position: 'absolute', inset: '-8% -4%', y: bgY, scale: bgScale, x: bgShiftX,
+          backgroundImage: 'url(https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=1800&q=85)',
+          backgroundSize: 'cover', backgroundPosition: 'center', willChange: 'transform',
+        }}
+      />
 
-      {/* Floating badges */}
-      <div style={{ position: 'absolute', top: '20%', right: '8%', background: 'white', borderRadius: 16, padding: '12px 20px', boxShadow: '0 8px 32px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', gap: 8 }} className="hero-badge">
-        <div style={{ width: 40, height: 40, borderRadius: 10, background: 'linear-gradient(135deg, #F58220, #D96E10)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Globe size={20} color="white" /></div>
-        <div><p style={{ margin: 0, fontWeight: 700, fontSize: 18, color: '#111' }}>50+</p><p style={{ margin: 0, fontSize: 12, color: '#888' }}>Destinations</p></div>
-      </div>
-      <div style={{ position: 'absolute', bottom: '28%', right: '6%', background: 'white', borderRadius: 16, padding: '12px 20px', boxShadow: '0 8px 32px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', gap: 8 }} className="hero-badge">
-        <div style={{ width: 40, height: 40, borderRadius: 10, background: 'linear-gradient(135deg, #F58220, #D96E10)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Users size={20} color="white" /></div>
-        <div><p style={{ margin: 0, fontWeight: 700, fontSize: 18, color: '#111' }}>12k+</p><p style={{ margin: 0, fontSize: 12, color: '#888' }}>Voyageurs heureux</p></div>
-      </div>
+      {/* Aurora color blobs */}
+      <div className="aurora-blob" style={{ top: '-10%', left: '-5%', width: 520, height: 520, background: 'radial-gradient(circle, rgba(245,130,32,0.55), transparent 70%)' }} />
+      <div className="aurora-blob" style={{ bottom: '-15%', right: '-8%', width: 620, height: 620, background: 'radial-gradient(circle, rgba(99,102,241,0.40), transparent 70%)', animationDelay: '-6s' }} />
+      <div className="aurora-blob" style={{ top: '30%', right: '20%', width: 380, height: 380, background: 'radial-gradient(circle, rgba(236,72,153,0.30), transparent 70%)', animationDelay: '-11s' }} />
 
-      <div style={{ position: 'relative', maxWidth: 1200, margin: '0 auto', padding: '0 24px', paddingTop: 80, width: '100%' }}>
-        <div style={{ maxWidth: 680 }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(245,130,32,0.2)', backdropFilter: 'blur(8px)', border: '1px solid rgba(245,130,32,0.5)', borderRadius: 50, padding: '6px 16px', marginBottom: 24 }}>
-            <Star size={14} color="#F58220" fill="#F58220" />
+      {/* Readability gradient */}
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(115deg, rgba(8,8,12,0.82) 0%, rgba(8,8,12,0.45) 55%, rgba(245,130,32,0.10) 100%)' }} />
+
+      {/* Floating glass badges */}
+      <motion.div
+        className="hero-badge"
+        initial={{ opacity: 0, scale: 0.8, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ delay: 0.9, type: 'spring', stiffness: 200, damping: 16 }}
+        style={{ position: 'absolute', top: '18%', right: '8%', x: badgeAX, y: badgeAY, background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 18, padding: '12px 20px', boxShadow: '0 12px 40px rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', gap: 10, zIndex: 3 }}
+      >
+        <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(135deg, #F58220, #D96E10)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Globe size={20} color="white" /></div>
+        <div><p style={{ margin: 0, fontWeight: 800, fontSize: 18, color: 'white' }}>50+</p><p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>Destinations</p></div>
+      </motion.div>
+      <motion.div
+        className="hero-badge"
+        initial={{ opacity: 0, scale: 0.8, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ delay: 1.1, type: 'spring', stiffness: 200, damping: 16 }}
+        style={{ position: 'absolute', bottom: '24%', right: '6%', x: badgeBX, y: badgeBY, background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: 18, padding: '12px 20px', boxShadow: '0 12px 40px rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', gap: 10, zIndex: 3 }}
+      >
+        <div style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(135deg, #F58220, #D96E10)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Users size={20} color="white" /></div>
+        <div><p style={{ margin: 0, fontWeight: 800, fontSize: 18, color: 'white' }}>12k+</p><p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.7)' }}>Voyageurs heureux</p></div>
+      </motion.div>
+
+      <motion.div style={{ position: 'relative', zIndex: 4, maxWidth: 1200, margin: '0 auto', padding: '0 24px', paddingTop: 80, width: '100%', y: contentY, opacity: contentOpacity }}>
+        <motion.div variants={container} initial="hidden" animate="show" style={{ maxWidth: 720 }}>
+          <motion.div variants={word} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(245,130,32,0.18)', backdropFilter: 'blur(8px)', border: '1px solid rgba(245,130,32,0.5)', borderRadius: 50, padding: '7px 16px', marginBottom: 24 }}>
+            <motion.span animate={{ scale: [1, 1.3, 1] }} transition={{ repeat: Infinity, duration: 2.4, ease: 'easeInOut' }} style={{ display: 'inline-flex' }}>
+              <Star size={14} color="#F58220" fill="#F58220" />
+            </motion.span>
             <span style={{ color: 'white', fontSize: 13, fontWeight: 500 }}>Agence de voyage #1 en France</span>
-          </div>
-          <h1 style={{ margin: '0 0 20px', fontSize: 'clamp(40px, 6vw, 76px)', fontWeight: 900, lineHeight: 1.05, color: 'white', letterSpacing: '-2px' }}>
-            Votre prochaine<br /><span style={{ color: '#F58220' }}>aventure</span> commence<br />ici ✈️
-          </h1>
-          <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: 18, lineHeight: 1.6, marginBottom: 40, maxWidth: 520 }}>
-            Des voyages inoubliables, des prix imbattables. Laissez-vous inspirer et partez explorer le monde avec 99Travels.
-          </p>
+          </motion.div>
 
-          <div style={{ background: 'white', borderRadius: 20, padding: 8, display: 'flex', flexWrap: 'wrap', gap: 8, boxShadow: '0 20px 60px rgba(0,0,0,0.25)', maxWidth: 640 }}>
+          <h1 style={{ margin: '0 0 22px', fontSize: 'clamp(42px, 6.4vw, 84px)', fontWeight: 900, lineHeight: 1.04, color: 'white', letterSpacing: '-2.5px' }}>
+            <span style={{ display: 'block', overflow: 'hidden' }}>
+              {TITLE_LINE1.map((w) => <motion.span key={w} variants={word} style={{ display: 'inline-block', marginRight: '0.28em' }}>{w}</motion.span>)}
+            </span>
+            <span style={{ display: 'block', overflow: 'hidden' }}>
+              <motion.span variants={word} className="hero-gradient-word" style={{ display: 'inline-block', marginRight: '0.28em' }}>aventure</motion.span>
+              <motion.span variants={word} style={{ display: 'inline-block' }}>commence</motion.span>
+            </span>
+            <span style={{ display: 'block', overflow: 'hidden' }}>
+              {TITLE_LINE3.map((w) => <motion.span key={w} variants={word} style={{ display: 'inline-block', marginRight: '0.28em' }}>{w}</motion.span>)}
+              <motion.span variants={word} animate={{ y: [0, -10, 0], rotate: [0, -8, 0] }} transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }} style={{ display: 'inline-block' }}>✈️</motion.span>
+            </span>
+          </h1>
+
+          <motion.p variants={word} style={{ color: 'rgba(255,255,255,0.85)', fontSize: 18, lineHeight: 1.6, marginBottom: 36, maxWidth: 520 }}>
+            Des voyages inoubliables, des prix imbattables. Laissez-vous inspirer et partez explorer le monde avec 99Travels.
+          </motion.p>
+
+          <motion.div variants={word} style={{ background: 'rgba(255,255,255,0.96)', borderRadius: 20, padding: 8, display: 'flex', flexWrap: 'wrap', gap: 8, boxShadow: '0 24px 70px rgba(0,0,0,0.35)', maxWidth: 640, backdropFilter: 'blur(4px)' }}>
             <div style={{ flex: 1, minWidth: 160, display: 'flex', alignItems: 'center', gap: 10, padding: '8px 16px', borderRight: '1px solid #f0f0f0' }}>
               <MapPin size={18} color="#F58220" />
               <input type="text" placeholder="Où voulez-vous aller ?" value={dest} onChange={e => setDest(e.target.value)} style={{ border: 'none', outline: 'none', fontSize: 14, width: '100%', color: '#333', background: 'transparent' }} />
@@ -70,24 +157,53 @@ function Hero() {
               <Calendar size={18} color="#F58220" />
               <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ border: 'none', outline: 'none', fontSize: 14, color: '#333', background: 'transparent' }} />
             </div>
-            <button style={{ background: 'linear-gradient(135deg, #F58220, #D96E10)', color: 'white', border: 'none', borderRadius: 14, padding: '14px 28px', fontWeight: 700, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap', fontFamily: 'inherit' }}>
-              <Plane size={16} style={{ transform: 'rotate(-45deg)' }} /> Chercher
-            </button>
-          </div>
+            <Magnetic strength={0.4}>
+              <motion.button whileTap={{ scale: 0.94 }} style={{ background: 'linear-gradient(135deg, #F58220, #D96E10)', color: 'white', border: 'none', borderRadius: 14, padding: '14px 28px', fontWeight: 700, fontSize: 15, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, whiteSpace: 'nowrap', fontFamily: 'inherit', boxShadow: '0 8px 24px rgba(245,130,32,0.5)' }}>
+                <Plane size={16} style={{ transform: 'rotate(-45deg)' }} /> Chercher
+              </motion.button>
+            </Magnetic>
+          </motion.div>
 
-          <div style={{ display: 'flex', gap: 32, marginTop: 40, flexWrap: 'wrap' }}>
-            {[['10 ans', "d'expérience"], ['50k+', 'avis 5 étoiles'], ['99%', 'clients satisfaits']].map(([n, l]) => (
-              <div key={n} style={{ color: 'white' }}>
-                <p style={{ margin: 0, fontWeight: 800, fontSize: 28, color: '#F58220' }}>{n}</p>
-                <p style={{ margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 1 }}>{l}</p>
+          <motion.div variants={word} style={{ display: 'flex', gap: 40, marginTop: 40, flexWrap: 'wrap' }}>
+            {HERO_STATS.map((s) => (
+              <div key={s.label} style={{ color: 'white' }}>
+                <p style={{ margin: 0, fontWeight: 800, fontSize: 30, color: '#F58220' }}>
+                  <CountUp to={s.to} suffix={s.suffix} />
+                </p>
+                <p style={{ margin: 0, fontSize: 13, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 1 }}>{s.label}</p>
               </div>
             ))}
-          </div>
-        </div>
-      </div>
+          </motion.div>
+        </motion.div>
+      </motion.div>
 
-      <ScrollIndicator targetId="destinations" />
-      <style>{`@media(max-width:768px){ .hero-badge{display:none!important} }`}</style>
+      {/* Bottom fade: blend the hero smoothly into the partners band (#0c0c0e) */}
+      <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 180, background: 'linear-gradient(to bottom, transparent 0%, rgba(12,12,14,0.55) 55%, #0c0c0e 100%)', zIndex: 3, pointerEvents: 'none' }} />
+
+      <style>{`
+        @media(max-width:768px){ .hero-badge{display:none!important} }
+        .hero-gradient-word{
+          background:linear-gradient(90deg,#F58220,#ffd089,#F58220,#ff8a3d);
+          background-size:200% auto;
+          -webkit-background-clip:text; background-clip:text;
+          -webkit-text-fill-color:transparent; color:transparent;
+          animation:shimmer 4s linear infinite;
+        }
+      `}</style>
+    </section>
+  )
+}
+
+/* ── Partners (logos qui défilent) ── */
+function PartnersSection() {
+  return (
+    <section style={{ background: '#0c0c0e', padding: '24px 0 26px' }}>
+      <Reveal>
+        <p style={{ textAlign: 'center', margin: '0 0 18px', color: 'rgba(255,255,255,0.42)', fontSize: 12, fontWeight: 600, letterSpacing: 3, textTransform: 'uppercase' }}>
+          Ils nous font confiance
+        </p>
+      </Reveal>
+      <LogoMarquee logos={partners} speed={45} />
     </section>
   )
 }
@@ -113,14 +229,24 @@ function DestinationsSection() {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 28 }}>
           {preview.map((d, i) => (
-            <Link key={d.id} to={`/destination/${d.slug}`} style={{ textDecoration: 'none', display: 'block' }}>
+            <motion.div
+              key={d.id}
+              initial={{ opacity: 0, y: 50 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.6, delay: (i % 3) * 0.1, ease: [0.21, 0.47, 0.32, 0.98] }}
+            >
+            <Link to={`/destination/${d.slug}`} style={{ textDecoration: 'none', display: 'block' }}>
+            <Tilt max={9} scale={1.04}
+              style={{ borderRadius: 24, cursor: 'pointer' }}
+            >
             <div
               onMouseEnter={() => setHovered(d.id)} onMouseLeave={() => setHovered(null)}
-              style={{ borderRadius: 24, overflow: 'hidden', cursor: 'pointer', background: 'white', boxShadow: hovered === d.id ? '0 20px 60px rgba(0,0,0,0.2)' : '0 4px 20px rgba(0,0,0,0.08)', transform: hovered === d.id ? 'translateY(-8px)' : 'translateY(0)', transition: 'all 0.35s ease', opacity: visible ? 1 : 0, transitionDelay: `${i * 0.1}s` }}>
+              style={{ borderRadius: 24, overflow: 'hidden', background: 'white', boxShadow: hovered === d.id ? '0 26px 70px rgba(245,130,32,0.28)' : '0 4px 20px rgba(0,0,0,0.08)', transition: 'box-shadow 0.35s ease' }}>
               <div style={{ position: 'relative', height: 240, overflow: 'hidden' }}>
-                <img src={d.img} alt={d.name} style={{ width: '100%', height: '100%', objectFit: 'cover', transform: hovered === d.id ? 'scale(1.08)' : 'scale(1)', transition: 'transform 0.5s ease' }} />
+                <img src={d.img} alt={d.name} style={{ width: '100%', height: '100%', objectFit: 'cover', transform: hovered === d.id ? 'scale(1.1)' : 'scale(1)', transition: 'transform 0.6s ease' }} />
                 <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 60%)' }} />
-                <span style={{ position: 'absolute', top: 16, left: 16, background: '#F58220', color: 'white', padding: '5px 14px', borderRadius: 50, fontSize: 12, fontWeight: 700 }}>{d.tag}</span>
+                <span style={{ position: 'absolute', top: 16, left: 16, background: '#F58220', color: 'white', padding: '5px 14px', borderRadius: 50, fontSize: 12, fontWeight: 700, transform: 'translateZ(40px)' }}>{d.tag}</span>
                 <div style={{ position: 'absolute', bottom: 16, left: 16, display: 'flex', alignItems: 'center', gap: 4 }}>
                   {[...Array(5)].map((_, k) => <Star key={k} size={12} color="#F58220" fill={k < Math.floor(d.rating) ? '#F58220' : 'transparent'} />)}
                   <span style={{ color: 'white', fontSize: 12, marginLeft: 4 }}>{d.rating}</span>
@@ -131,23 +257,27 @@ function DestinationsSection() {
                   <h3 style={{ margin: '0 0 6px', fontWeight: 700, fontSize: 18, color: '#111' }}>{d.name}</h3>
                   <p style={{ margin: 0, color: '#F58220', fontWeight: 600, fontSize: 15 }}>{d.price}</p>
                 </div>
-                <div style={{ width: 44, height: 44, borderRadius: '50%', background: hovered === d.id ? 'linear-gradient(135deg, #F58220, #D96E10)' : '#fff3e8', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
+                <div style={{ width: 44, height: 44, borderRadius: '50%', background: hovered === d.id ? 'linear-gradient(135deg, #F58220, #D96E10)' : '#fff3e8', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s', transform: 'translateZ(30px)' }}>
                   <ArrowRight size={18} color={hovered === d.id ? 'white' : '#F58220'} />
                 </div>
               </div>
             </div>
+            </Tilt>
             </Link>
+            </motion.div>
           ))}
         </div>
 
         <div style={{ textAlign: 'center', marginTop: 48 }}>
           <Link to="/destinations" style={{ textDecoration: 'none' }}>
+            <Magnetic strength={0.3}>
             <button style={{ background: 'transparent', border: '2px solid #F58220', color: '#F58220', borderRadius: 50, padding: '14px 36px', fontWeight: 600, fontSize: 16, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8, transition: 'all 0.3s', fontFamily: 'inherit' }}
               onMouseEnter={e => { e.currentTarget.style.background = '#F58220'; e.currentTarget.style.color = 'white' }}
               onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#F58220' }}
             >
               Voir toutes les destinations <ChevronRight size={18} />
             </button>
+            </Magnetic>
           </Link>
         </div>
       </div>
@@ -205,29 +335,35 @@ function OffersSection() {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 28 }}>
             {offers.map((o, i) => (
-              <div key={i} style={{ borderRadius: 24, overflow: 'hidden', background: '#1f1f1f', border: '1px solid rgba(255,255,255,0.06)', transition: 'all 0.35s ease', opacity: visible ? 1 : 0, transitionDelay: `${i * 0.15}s` }}
-                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-6px)'; e.currentTarget.style.boxShadow = '0 20px 50px rgba(245,130,32,0.15)'; e.currentTarget.style.borderColor = 'rgba(245,130,32,0.3)' }}
-                onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)' }}
+              <Reveal key={o.slug} delay={(i % 3) * 0.12} y={50} style={{ height: '100%' }}>
+              <Link to={`/offre/${o.slug}`} style={{ textDecoration: 'none', display: 'block', height: '100%' }}>
+              <Tilt max={8} scale={1.03} style={{ borderRadius: 24, cursor: 'pointer', height: '100%' }}>
+              <div style={{ borderRadius: 24, overflow: 'hidden', background: '#1f1f1f', border: '1px solid rgba(255,255,255,0.06)', transition: 'box-shadow 0.35s ease, border-color 0.35s ease', height: '100%', display: 'flex', flexDirection: 'column' }}
+                onMouseEnter={e => { e.currentTarget.style.boxShadow = '0 26px 70px rgba(245,130,32,0.28)'; e.currentTarget.style.borderColor = 'rgba(245,130,32,0.35)' }}
+                onMouseLeave={e => { e.currentTarget.style.boxShadow = 'none'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)' }}
               >
-                <div style={{ position: 'relative', height: 220 }}>
-                  <img src={o.img} alt={o.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <div style={{ position: 'relative', height: 220, overflow: 'hidden' }}>
+                  <img src={o.img} alt={o.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.6), transparent)' }} />
-                  <span style={{ position: 'absolute', top: 16, right: 16, background: '#F58220', color: 'white', padding: '6px 14px', borderRadius: 50, fontSize: 12, fontWeight: 700 }}>{o.badge}</span>
-                  <div style={{ position: 'absolute', bottom: 16, left: 16, background: 'rgba(245,130,32,0.9)', color: 'white', borderRadius: 50, padding: '4px 14px', fontSize: 14, fontWeight: 800 }}>{o.save}</div>
+                  <span style={{ position: 'absolute', top: 16, right: 16, background: '#F58220', color: 'white', padding: '6px 14px', borderRadius: 50, fontSize: 12, fontWeight: 700, transform: 'translateZ(40px)' }}>{o.badge}</span>
+                  <div style={{ position: 'absolute', bottom: 16, left: 16, background: 'rgba(245,130,32,0.9)', color: 'white', borderRadius: 50, padding: '4px 14px', fontSize: 14, fontWeight: 800, transform: 'translateZ(40px)' }}>{o.save}</div>
                 </div>
-                <div style={{ padding: 24 }}>
-                  <h3 style={{ fontWeight: 700, fontSize: 20, color: 'white', margin: '0 0 6px' }}>{o.title}</h3>
+                <div style={{ padding: 24, display: 'flex', flexDirection: 'column', flex: 1 }}>
+                  <h3 style={{ fontWeight: 700, fontSize: 20, color: 'white', margin: '0 0 6px' }}>{o.name}</h3>
                   <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, margin: '0 0 20px' }}>{o.sub}</p>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
                     <div>
                       <span style={{ textDecoration: 'line-through', color: 'rgba(255,255,255,0.35)', fontSize: 14 }}>{o.oldPrice}</span>
                       <p style={{ margin: 0, color: '#F58220', fontWeight: 800, fontSize: 26, lineHeight: 1.1 }}>{o.price}</p>
                       <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>par personne</span>
                     </div>
-                    <button style={{ background: 'linear-gradient(135deg, #F58220, #D96E10)', border: 'none', borderRadius: 14, color: 'white', padding: '12px 22px', fontWeight: 600, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}>Réserver</button>
+                    <motion.button type="button" whileTap={{ scale: 0.94 }} style={{ background: 'linear-gradient(135deg, #F58220, #D96E10)', border: 'none', borderRadius: 14, color: 'white', padding: '12px 22px', fontWeight: 600, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 6px 18px rgba(245,130,32,0.35)' }}>Réserver</motion.button>
                   </div>
                 </div>
               </div>
+              </Tilt>
+              </Link>
+              </Reveal>
             ))}
           </div>
         </div>
@@ -399,8 +535,11 @@ export default function Home() {
   useScrollToSection()
   return (
     <div style={{ fontFamily: "'Inter', ui-sans-serif, system-ui, sans-serif" }}>
+      <ScrollProgress />
+      <CursorGlow />
       <Navbar />
       <Hero />
+      <PartnersSection />
       <DestinationsSection />
       <FeaturesSection />
       <OffersSection />

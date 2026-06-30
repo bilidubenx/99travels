@@ -12,6 +12,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/destinations" element={<Destinations />} />
         <Route path="/destination/:slug" element={<DestinationDetail />} />
+        <Route path="/offre/:slug" element={<DestinationDetail />} />
       </Routes>
     </BrowserRouter>
   )
